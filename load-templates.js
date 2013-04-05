@@ -5,19 +5,21 @@ if (is_node)
   module.exports = loadTemplates;
 else
   root.loadTemplates = loadTemplates;
+var join = is_node ? require('path').join : function(root, path) { return root + '/' + path; };
 
 var nested_regex = /\{\{(\{)?\s*(.+?)\.html\s*\}\}\}?/gi;
 var loading = 'LOADING...';
 
 // TODO: pull out the template-loader into a separate npm module
 // so glass-templates can be passed the templates
-function loadTemplates(path, templates, callback) {
-  if (!templates)
-    templates = {};
+function loadTemplates(path, options, callback) {
+  if (!options)
+    options = {};
+  var templates = options.templates = options.templates || {};
 
   if (Array.isArray(path)) {
     return path.forEach(function(path) {
-      loadTemplates(path, templates, callback);
+      loadTemplates(path, options, callback);
     });
   }
 
@@ -33,7 +35,7 @@ function loadTemplates(path, templates, callback) {
       if (separator_ix > -1)
         path = path.slice(separator_ix + 1);
       if (!(path in templates))
-        loadTemplates(path, templates, callback);
+        loadTemplates(path, options, callback);
     });
 
     for (var path in templates)
@@ -42,6 +44,9 @@ function loadTemplates(path, templates, callback) {
     
     callback(null, templates);
   }
+
+  if (options.root)
+    path = join(options.root, path);
 
   if (is_node)
     require('fs').readFile(path, 'utf-8', cb);
